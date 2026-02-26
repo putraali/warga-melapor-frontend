@@ -4,11 +4,16 @@ import Login from "./components/Login";
 import Register from "./components/Register";
 import Dashboard from "./pages/Dashboard";
 import ForgotPassword from "./components/ForgotPassword";
+
 // --- IMPORT HALAMAN USER ---
 import UserList from "./pages/UserList"; 
 import AddUser from "./pages/AddUser";
 import EditUser from "./pages/EditUser"; 
 import EditProfile from "./pages/EditProfile";
+
+// --- IMPORT HALAMAN KETUA RW ---
+import ValidasiWarga from "./pages/ValidasiWarga"; // <-- TAMBAHAN BARU
+
 // --- IMPORT HALAMAN REPORT ---
 import Report from "./pages/Report";    
 import AddReport from "./pages/AddReport"; 
@@ -23,13 +28,16 @@ function App() {
         <Route path="/" element={<Login />} />
         <Route path="/register" element={<Register />} />
         
-        {/* --- ROUTE DASHBOARD --- */}
+        {/* --- ROUTE DASHBOARD (Semua Role Masuk ke Sini) --- */}
         <Route path="/dashboard" element={<Dashboard />} />
         
-        {/* --- KELOLA USERS (KHUSUS ADMIN) --- */}
+        {/* --- KELOLA USERS (Admin & Ketua RW) --- */}
         <Route path="/users" element={<UserList />} />
         <Route path="/users/add" element={<AddUser />} />
         <Route path="/users/edit/:id" element={<EditUser />} />
+
+        {/* --- ADMINISTRASI KETUA RW --- */}
+        <Route path="/ValidasiWarga" element={<ValidasiWarga />} /> {/* <-- TAMBAHAN BARU */}
 
         {/* --- KELOLA REPORTS --- */}
         {/* 1. Admin & PJ melihat semua laporan */}

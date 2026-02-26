@@ -158,6 +158,33 @@ const EditUser = () => {
         </div>
       )}
 
+      {/* --- OVERLAY LOADING SAAT TOMBOL SUBMIT DITEKAN --- */}
+      {isSubmitting && (
+        <div 
+            className="position-fixed top-0 start-0 w-100 h-100 d-flex flex-column justify-content-center align-items-center" 
+            style={{ backgroundColor: 'rgba(255, 255, 255, 0.9)', zIndex: 9999, backdropFilter: 'blur(3px)' }}
+        >
+            <div className="position-relative d-flex justify-content-center align-items-center" style={{ width: '120px', height: '120px' }}>
+                <img 
+                    src="/Logolaporpak.png" 
+                    alt="Menyimpan data..." 
+                    className="position-absolute" 
+                    style={{ width: '55px', height: 'auto', zIndex: 2 }} 
+                />
+                <div 
+                    className="spinner-border text-primary position-absolute" 
+                    style={{ width: '120px', height: '120px', borderWidth: '5px', zIndex: 1 }} 
+                    role="status"
+                >
+                    <span className="visually-hidden">Loading...</span>
+                </div>
+            </div>
+            <h5 className="mt-4 fw-bold text-dark" style={{ letterSpacing: '0.5px' }}>
+                Menyimpan Perubahan...
+            </h5>
+        </div>
+      )}
+
       {!isPageLoading && (
           <div className="row justify-content-center">
             <div className="col-md-8">
@@ -255,8 +282,12 @@ const EditUser = () => {
                         onChange={(e) => setRole(e.target.value)}
                         required
                       >
-                        <option value="penanggung_jawab">Penanggung Jawab</option>
                         <option value="warga">Warga</option>
+                        <option value="ketua_rw">Ketua RW</option> {/* --- TAMBAHAN BARU --- */}
+                        <option value="penanggung_jawab">Penanggung Jawab (Petugas)</option>
+                        {/* Jika user yang sedang diedit adalah admin, tampilkan opsi admin. 
+                            Jika tidak, biasanya admin tidak bisa mengubah warga biasa jadi admin untuk keamanan */}
+                        {role === "admin" && <option value="admin">Admin</option>}
                       </select>
                     </div>
                     

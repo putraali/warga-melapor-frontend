@@ -42,7 +42,7 @@ const AddReport = () => {
 
   const dispatch = useDispatch();
   const navigate = useNavigate();
-  const { isError, user, isLoading } = useSelector((state) => state.auth); // Ekstrak isLoading dari Redux
+  const { isError, user, isLoading } = useSelector((state) => state.auth); 
 
   useEffect(() => {
     dispatch(getMe());
@@ -112,7 +112,7 @@ const AddReport = () => {
         });
     }
 
-    setIsSubmitting(true); // Mulai Pemicu Loading Overlay Submit
+    setIsSubmitting(true); 
 
     const formData = new FormData();
     formData.append("title", title);
@@ -129,7 +129,6 @@ const AddReport = () => {
         headers: { "Content-type": "multipart/form-data", Authorization: `Bearer ${token}` },
       });
       
-      // Notifikasi Sukses
       Swal.fire({
         icon: 'success',
         title: 'Laporan Terkirim!',
@@ -141,7 +140,6 @@ const AddReport = () => {
       });
 
     } catch (error) {
-      // Notifikasi Error
       Swal.fire({
           icon: 'error',
           title: 'Gagal Mengirim',
@@ -149,17 +147,16 @@ const AddReport = () => {
           confirmButtonColor: '#dc3545'
       });
     } finally {
-      setIsSubmitting(false); // Matikan Pemicu Loading Overlay
+      setIsSubmitting(false); 
     }
   };
 
-  // --- LOGIKA KONDISI LOADING AWAL HALAMAN ---
   const isPageLoading = isLoading || (!user && !isError);
 
   return (
     <Layout>
 
-      {/* 1. OVERLAY LOADING SAAT HALAMAN AWAL DIMUAT (Gaya Dashboard) */}
+      {/* 1. OVERLAY LOADING SAAT HALAMAN AWAL DIMUAT */}
       {isPageLoading && (
         <div 
             className="position-fixed top-0 start-0 w-100 h-100 d-flex flex-column justify-content-center align-items-center" 
@@ -214,8 +211,25 @@ const AddReport = () => {
         </div>
       )}
 
-      {/* --- KONTEN HALAMAN UTAMA (Hanya dirender jika loading awal selesai) --- */}
-      {!isPageLoading && (
+      {/* --- 3. TAMPILAN BLOKIR JIKA STATUS WARGA MASIH PENDING --- */}
+      {!isPageLoading && user?.role === "warga" && user?.status_warga === "pending" && (
+        <div className="container mt-4 mb-5">
+            <div className="alert alert-warning shadow-sm border-0 border-start border-warning border-4 text-center p-5 rounded">
+                <i className="bi bi-shield-exclamation text-warning mb-3 d-block" style={{ fontSize: "4rem" }}></i>
+                <h3 className="fw-bold text-dark">Akun Belum Diverifikasi</h3>
+                <p className="mb-4 fs-6 text-muted">
+                    Akun Anda saat ini sedang dalam status <strong>Pending</strong>. <br/>
+                    Silakan tunggu Ketua RW Anda memvalidasi data kependudukan (NIK dan Alamat) Anda sebelum dapat membuat laporan pengaduan.
+                </p>
+                <button className="btn btn-warning fw-bold text-dark px-4 py-2 rounded-pill shadow-sm" onClick={() => navigate("/dashboard")}>
+                    Kembali ke Dashboard
+                </button>
+            </div>
+        </div>
+      )}
+
+      {/* --- 4. KONTEN HALAMAN UTAMA (Hanya tampil jika bukan warga yang pending) --- */}
+      {!isPageLoading && (user?.role !== "warga" || user?.status_warga !== "pending") && (
           <div>
               <div className="d-flex justify-content-between align-items-center mb-4">
                 <h3 className="fw-bold mb-0">Buat Laporan Baru</h3>

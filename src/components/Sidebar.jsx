@@ -1,12 +1,12 @@
 import React, { useState } from 'react';
-import { NavLink, useNavigate, useLocation } from "react-router-dom"; // TAMBAHKAN useLocation
+import { NavLink, useNavigate, useLocation } from "react-router-dom"; 
 import { useDispatch, useSelector } from "react-redux";
 import { LogOut, reset } from "../features/authSlice";
 
 const Sidebar = ({ isOpen, closeSidebar }) => {
   const dispatch = useDispatch();
   const navigate = useNavigate();
-  const location = useLocation(); // EKSTRAK URL SAAT INI
+  const location = useLocation(); 
   const { user } = useSelector((state) => state.auth);
 
   const [isLoggingOut, setIsLoggingOut] = useState(false);
@@ -30,16 +30,14 @@ const Sidebar = ({ isOpen, closeSidebar }) => {
 
   // FUNGSI KHUSUS UNTUK MENU "RIWAYAT SAYA" (WARGA)
   const isWargaHistoryActive = () => {
-    // Akan aktif jika URL persis '/reports/me' ATAU sedang membuka '/reports/detail/...'
     if (location.pathname === '/reports/me' || location.pathname.startsWith('/reports/detail/')) {
         return true;
     }
     return false;
   };
 
-  // FUNGSI KHUSUS UNTUK MENU "DATA LAPORAN" / "TUGAS LAPANGAN" (ADMIN/PJ)
+  // FUNGSI KHUSUS UNTUK MENU "DATA LAPORAN" / "TUGAS LAPANGAN" (ADMIN/PJ/RW)
   const isStandardReportActive = () => {
-      // Akan aktif jika URL persis '/reports' ATAU sedang membuka '/reports/action/...'
       if (location.pathname === '/reports' || location.pathname.startsWith('/reports/action/')) {
           return true;
       }
@@ -100,7 +98,6 @@ const Sidebar = ({ isOpen, closeSidebar }) => {
                 <div className="mt-4">
                     <small className="text-secondary fw-bold px-3" style={{fontSize:'0.75rem'}}>ADMINISTRASI</small>
                     <li className="nav-item mt-2">
-                        {/* UPDATE: Gunakan class statis berdasarkan fungsi pengecekan */}
                         <NavLink to="/reports" className={`nav-link d-flex align-items-center gap-3 rounded mb-1 ${isStandardReportActive() ? 'bg-primary text-white shadow-sm' : 'text-dark hover-bg-light'}`} onClick={closeSidebar}>
                             <i className="bi bi-files"></i> <span className="fw-semibold">Data Laporan</span>
                         </NavLink>
@@ -119,16 +116,13 @@ const Sidebar = ({ isOpen, closeSidebar }) => {
                     
                    <li className="nav-item mt-2">
                         <NavLink to="/reports/add" className={getNavLinkClass} onClick={closeSidebar}>
-                            <i className="bi bi-pencil-square me-2"></i> 
-                            <span className="fw-semibold">Buat Laporan</span>
+                            <i className="bi bi-pencil-square"></i> <span className="fw-semibold">Buat Laporan</span>
                         </NavLink>
                     </li>
 
                     <li className="nav-item">
-                        {/* UPDATE: Gunakan class statis berdasarkan fungsi pengecekan khusus warga */}
                         <NavLink to="/reports/me" className={`nav-link d-flex align-items-center gap-3 rounded mb-1 ${isWargaHistoryActive() ? 'bg-primary text-white shadow-sm' : 'text-dark hover-bg-light'}`} onClick={closeSidebar}>
-                            <i className="bi bi-journal-text me-2"></i> 
-                            <span className="fw-semibold">Riwayat Saya</span>
+                            <i className="bi bi-journal-text"></i> <span className="fw-semibold">Riwayat Saya</span>
                         </NavLink>
                     </li>
                 </div>
@@ -138,11 +132,31 @@ const Sidebar = ({ isOpen, closeSidebar }) => {
                 <div className="mt-4">
                     <small className="text-secondary fw-bold px-3" style={{fontSize:'0.75rem'}}>TUGAS</small>
                     <li className="nav-item mt-2">
-                        {/* UPDATE: Gunakan class statis berdasarkan fungsi pengecekan */}
                         <NavLink to="/reports" className={`nav-link d-flex align-items-center gap-3 rounded mb-1 ${isStandardReportActive() ? 'bg-primary text-white shadow-sm' : 'text-dark hover-bg-light'}`} onClick={closeSidebar}>
                             <i className="bi bi-hammer"></i> <span className="fw-semibold">Tugas Lapangan</span>
                         </NavLink>
                     </li>
+                </div>
+            )}
+
+            {/* --- MENU KETUA RW --- */}
+            {user?.role === "ketua_rw" && (
+                <div className="mt-4">
+                    <small className="text-secondary fw-bold px-3" style={{fontSize:'0.75rem'}}>ADMINISTRASI RW</small>
+                    
+                    <li className="nav-item mt-2">
+                        <NavLink to="/ValidasiWarga" className={getNavLinkClass} onClick={closeSidebar}>
+                            <i className="bi bi-person-check-fill"></i> <span className="fw-semibold">Validasi Warga</span>
+                        </NavLink>
+                    </li>
+                    
+                    {/* --- TAMBAHAN BARU: DAFTAR LAPORAN UNTUK KETUA RW --- */}
+                    <li className="nav-item">
+                        <NavLink to="/reports" className={`nav-link d-flex align-items-center gap-3 rounded mb-1 ${isStandardReportActive() ? 'bg-primary text-white shadow-sm' : 'text-dark hover-bg-light'}`} onClick={closeSidebar}>
+                            <i className="bi bi-card-checklist"></i> <span className="fw-semibold">Daftar Laporan</span>
+                        </NavLink>
+                    </li>
+
                 </div>
             )}
 
@@ -169,7 +183,6 @@ const Sidebar = ({ isOpen, closeSidebar }) => {
         </div>
       </div>
 
-      {/* --- OVERLAY LOADING DENGAN BACKGROUND LEBIH PUTIH --- */}
       {isLoggingOut && (
         <div 
             className="position-fixed top-0 start-0 w-100 h-100 d-flex flex-column justify-content-center align-items-center" 

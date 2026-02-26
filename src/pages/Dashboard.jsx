@@ -9,6 +9,7 @@ import { getMe } from "../features/authSlice";
 import DashboardAdmin from "./DashboardAdmin"; 
 import DashboardWarga from "./DashboardWarga";
 import DashboardPetugas from "./DashboardPetugas";
+import DashboardRW from "./DashboardRW"; // --- TAMBAHAN BARU ---
 
 const Dashboard = () => {
   const dispatch = useDispatch();
@@ -116,6 +117,11 @@ const Dashboard = () => {
 
       {!isPageLoading && user && user.role === "penanggung_jawab" && (
          <DashboardPetugas user={user} stats={stats} />
+      )}
+
+      {/* --- TAMBAHAN BARU: RENDER DASHBOARD KHUSUS KETUA RW --- */}
+      {!isPageLoading && user && user.role === "ketua_rw" && (
+         <DashboardRW stats={stats} userRw={user.rw} />
       )}
 
     </Layout>

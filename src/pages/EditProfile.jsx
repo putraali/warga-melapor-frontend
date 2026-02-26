@@ -11,6 +11,12 @@ import Swal from 'sweetalert2';
 const EditProfile = () => {
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
+  
+  // State untuk NIK, Alamat, dan RW
+  const [nik, setNik] = useState("");
+  const [alamat, setAlamat] = useState("");
+  const [rw, setRw] = useState("");
+
   const [password, setPassword] = useState("");
   const [confPassword, setConfPassword] = useState("");
   const [file, setFile] = useState(null); 
@@ -51,6 +57,11 @@ const EditProfile = () => {
             setName(response.data.name);
             setEmail(response.data.email);
             setPreview(response.data.url);
+            
+            // Set data NIK, Alamat, dan RW dari database (jika ada nilainya)
+            setNik(response.data.nik || "");
+            setAlamat(response.data.alamat || "");
+            setRw(response.data.rw || "");
         }
       } catch (error) {
         console.log("Gagal ambil profil:", error);
@@ -101,6 +112,11 @@ const EditProfile = () => {
     formData.append("name", name);
     formData.append("email", email);
     
+    // Append NIK, Alamat, dan RW ke FormData
+    formData.append("nik", nik);
+    formData.append("alamat", alamat);
+    formData.append("rw", rw);
+    
     if (password) {
         formData.append("password", password);
         formData.append("confPassword", confPassword);
@@ -122,13 +138,12 @@ const EditProfile = () => {
         }
       });
       
-      // --- PERBAIKAN: MENGGUNAKAN SWEETALERT2 ---
       Swal.fire({
         icon: 'success',
         title: 'Berhasil!',
         text: 'Profil Anda telah berhasil diperbarui.',
-        confirmButtonColor: '#0d6efd', // Warna biru bootstrap agar senada
-        timer: 3000 // Otomatis tertutup dalam 3 detik jika tidak di-klik
+        confirmButtonColor: '#0d6efd',
+        timer: 3000
       });
       
       dispatch(getMe()); 
@@ -139,7 +154,6 @@ const EditProfile = () => {
       if (error.response) {
         setMsg(error.response.data.msg);
       } else {
-        // Notifikasi Error Server menggunakan SweetAlert
         Swal.fire({
             icon: 'error',
             title: 'Oops...',
@@ -187,7 +201,7 @@ const EditProfile = () => {
             <div className="col-md-8">
                 <h3 className="fw-bold mb-4">Edit Profil Saya</h3>
 
-                <div className="card shadow-sm border-0">
+                <div className="card shadow-sm border-0 mb-5">
                     <div className="card-body p-4">
                     
                     {msg && (
@@ -232,7 +246,7 @@ const EditProfile = () => {
                             </div>
                         </div>
 
-                        {/* INPUT FORM */}
+                        {/* INPUT FORM - NAMA */}
                         <div className="mb-3">
                             <label className="form-label fw-bold small text-muted">Nama Lengkap</label>
                             <input 
@@ -244,6 +258,7 @@ const EditProfile = () => {
                             />
                         </div>
 
+                        {/* INPUT FORM - EMAIL */}
                         <div className="mb-3">
                             <label className="form-label fw-bold small text-muted">Email</label>
                             <input 
@@ -255,6 +270,59 @@ const EditProfile = () => {
                             />
                         </div>
 
+                        {/* --- NIK & ALAMAT (Hanya tampil untuk Warga/Petugas, DIBLOKIR untuk Admin & Ketua RW) --- */}
+                        {user?.role !== "admin" && user?.role !== "ketua_rw" && (
+                            <>
+                                <div className="mb-3">
+                                    <label className="form-label fw-bold small text-muted">NIK (Nomor Induk Kependudukan)</label>
+                                    <input 
+                                        type="text" 
+                                        className="form-control bg-light" 
+                                        value={nik} 
+                                        onChange={(e) => setNik(e.target.value)} 
+                                        required
+                                        placeholder="Masukkan 16 digit NIK"
+                                    />
+                                </div>
+
+                                <div className="mb-3">
+                                    <label className="form-label fw-bold small text-muted">Alamat Lengkap</label>
+                                    <textarea 
+                                        className="form-control bg-light" 
+                                        value={alamat} 
+                                        onChange={(e) => setAlamat(e.target.value)} 
+                                        rows="3"
+                                        required
+                                        placeholder="Masukkan detail alamat (Jalan, RT, dll)"
+                                    ></textarea>
+                                </div>
+                            </>
+                        )}
+
+                        {/* --- INPUT RW (Tampil untuk selain Admin. Jika Ketua RW, maka dropdown di-disable) --- */}
+                        {user?.role !== "admin" && (
+                            <div className="mb-3">
+                                <label className="form-label fw-bold small text-muted">
+                                    {user?.role === "ketua_rw" ? "Wilayah RW (Tidak dapat diubah)" : "Pilih RW"}
+                                </label>
+                                <select 
+                                    className="form-select bg-light" 
+                                    value={rw} 
+                                    onChange={(e) => setRw(e.target.value)} 
+                                    required
+                                    disabled={user?.role === "ketua_rw"} // Kunci RW jika user adalah Ketua RW
+                                >
+                                    <option value="" disabled>-- Pilih RW --</option>
+                                    {[...Array(12)].map((_, index) => (
+                                        <option key={index + 1} value={`RW ${index + 1}`}>
+                                            RW {index + 1}
+                                        </option>
+                                    ))}
+                                </select>
+                            </div>
+                        )}
+
+                        {/* --- UBAH PASSWORD (Bisa diakses oleh semua KECUALI Admin) --- */}
                         {user?.role !== "admin" && (
                             <>
                                 <hr className="my-4 text-muted" />
