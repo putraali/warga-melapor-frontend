@@ -6,7 +6,9 @@ const DashboardWarga = ({ user }) => {
   const [recentReports, setRecentReports] = useState([]);
   const [loading, setLoading] = useState(true);
   
+  // State untuk peringatan profil (default ke false agar tidak berkedip)
   const [isProfileIncomplete, setIsProfileIncomplete] = useState(false);
+  const [isCheckingProfile, setIsCheckingProfile] = useState(true);
   
   const [stats, setStats] = useState({
     pending: 0,
@@ -15,16 +17,53 @@ const DashboardWarga = ({ user }) => {
     total: 0
   });
 
-  // Fungsi helper super ketat agar tidak tertipu oleh teks "null" atau spasi
-  const isValidData = (val) => {
-    if (val === null || val === undefined) return false;
+  // Fungsi helper yang sangat ketat untuk mendeteksi data kosong
+  const isDataEmpty = (val) => {
+    if (val === null || val === undefined) return true;
     const str = String(val).trim().toLowerCase();
-    if (str === '' || str === 'null' || str === 'undefined' || str === '-') return false;
-    return true;
+    if (str === '' || str === 'null' || str === 'undefined' || str === '-') return true;
+    return false;
   };
 
   useEffect(() => {
-    const fetchData = async () => {
+    // Fungsi untuk mengecek langsung ke database
+    const checkRealtimeProfile = async (token) => {
+        try {
+            // Gunakan timestamp untuk memecah cache browser secara paksa
+            const timestamp = new Date().getTime();
+            const userId = user?.uuid || user?.id;
+            
+            if(!userId) return;
+
+            const res = await axios.get(`https://warga-melapor-backend-production.up.railway.app/users/${userId}?t=${timestamp}`, {
+                headers: { Authorization: `Bearer ${token}` }
+            });
+            
+            const dbUser = res.data.data || res.data;
+            console.log("🛠️ Data Profil dari Database:", dbUser); // Cek isi data di Console
+            
+            // Pengecekan HANYA pada 'nik' dan 'alamat' sesuai tabel Anda
+            const emptyNik = isDataEmpty(dbUser.nik);
+            const emptyAlamat = isDataEmpty(dbUser.alamat);
+            
+            // Jika salah satu (atau keduanya) kosong, tampilkan peringatan
+            if (emptyNik || emptyAlamat) {
+                setIsProfileIncomplete(true);
+            } else {
+                setIsProfileIncomplete(false);
+            }
+        } catch (error) {
+            console.error("Gagal verifikasi profil ke DB:", error);
+            // Fallback jika API error: Cek dari state Redux
+            const fallbackNikEmpty = isDataEmpty(user?.nik);
+            const fallbackAlamatEmpty = isDataEmpty(user?.alamat);
+            setIsProfileIncomplete(fallbackNikEmpty || fallbackAlamatEmpty);
+        } finally {
+            setIsCheckingProfile(false);
+        }
+    };
+
+    const fetchMyReports = async () => {
       try {
         setLoading(true);
         
@@ -36,45 +75,18 @@ const DashboardWarga = ({ user }) => {
         if (!rawToken) {
             console.error("❌ Token tidak ditemukan di browser!");
             setLoading(false);
+            setIsCheckingProfile(false);
             return;
         }
 
         const cleanToken = rawToken.replace(/^"(.*)"$/, '$1');
-        const headers = { Authorization: `Bearer ${cleanToken}` };
 
-        // =================================================================
-        // 1. CEK KELENGKAPAN PROFIL (DENGAN CACHE BUSTER)
-        // =================================================================
-        if (user && (user.id || user.user_id)) {
-            try {
-                const userId = user.id || user.user_id;
-                // Tambahan ?t=... memaksa browser mengambil data paling baru dari server
-                const timestamp = new Date().getTime();
-                const userRes = await axios.get(`https://warga-melapor-backend-production.up.railway.app/users/${userId}?t=${timestamp}`, { headers });
-                
-                const userData = userRes.data.data || userRes.data;
-                console.log("🛠️ Data Profil Paling Baru dari DB:", userData);
-                
-                const hasNik = userData.nik || userData.no_ktp;
-                const hasAlamat = userData.alamat || userData.address;
+        // 1. CEK PROFIL KE DB SECARA PARALEL
+        checkRealtimeProfile(cleanToken);
 
-                if (!isValidData(hasNik) || !isValidData(hasAlamat)) {
-                    setIsProfileIncomplete(true);
-                } else {
-                    setIsProfileIncomplete(false);
-                }
-            } catch (err) {
-                console.error("Gagal mengecek profil ke database:", err.message);
-                const localIncomplete = !isValidData(user.nik || user.no_ktp) || !isValidData(user.alamat || user.address);
-                setIsProfileIncomplete(localIncomplete);
-            }
-        }
-
-        // =================================================================
-        // 2. AMBIL DATA STATISTIK & LAPORAN
-        // =================================================================
+        // 2. AMBIL DATA LAPORAN
         const response = await axios.get('https://warga-melapor-backend-production.up.railway.app/reports/me', {
-          headers: headers,
+          headers: { Authorization: `Bearer ${cleanToken}` },
           withCredentials: true 
         }); 
         
@@ -110,16 +122,16 @@ const DashboardWarga = ({ user }) => {
     };
 
     if (user) {
-      fetchData();
+      fetchMyReports();
     }
   }, [user]);
 
   const getStatusBadge = (status) => {
     const s = String(status || '').toLowerCase();
-    if (s.includes('selesai') || s.includes('done')) return 'bg-success';
-    if (s.includes('proses') || s.includes('progress')) return 'bg-info';
-    if (s.includes('tolak') || s.includes('reject')) return 'bg-danger';
-    return 'bg-warning'; 
+    if (s.includes('selesai') || s.includes('done')) return 'bg-success text-white';
+    if (s.includes('proses') || s.includes('progress')) return 'bg-warning text-dark';
+    if (s.includes('tolak') || s.includes('reject')) return 'bg-danger text-white';
+    return 'bg-secondary text-white'; 
   };
 
   return (
@@ -136,14 +148,14 @@ const DashboardWarga = ({ user }) => {
       <div className="row justify-content-center">
         <div className="col-md-10">
           
-          {/* BANNER PERINGATAN */}
-          {isProfileIncomplete && (
+          {/* BANNER PERINGATAN (Akan muncul jika pengecekan DB selesai & data kosong) */}
+          {!isCheckingProfile && isProfileIncomplete && (
             <div className="alert alert-warning border-warning border-2 d-flex align-items-center shadow-sm mb-4 rounded-4" role="alert">
               <i className="bi bi-exclamation-triangle-fill fs-3 text-warning me-3"></i>
               <div>
                 <h6 className="alert-heading fw-bold mb-1">Identitas Belum Lengkap!</h6>
                 <p className="mb-0 text-dark" style={{ fontSize: '0.9rem' }}>
-                  Mohon lengkapi data diri Anda (NIK dan Alamat) di menu <Link to="/profile" className="fw-bold text-dark text-decoration-underline position-relative">Profil Saya</Link> agar laporan Anda dapat diverifikasi.
+                  Mohon lengkapi data diri Anda (NIK dan Alamat) di menu <Link to="/profile" className="fw-bold text-dark text-decoration-underline position-relative">Profil Saya</Link> agar laporan Anda dapat diproses.
                 </p>
               </div>
             </div>
@@ -229,9 +241,8 @@ const DashboardWarga = ({ user }) => {
                   {recentReports.map((report, index) => (
                     <Link key={index} to={`/reports/detail/${report.uuid || report.id}`} className="list-group-item list-group-item-action p-4 report-card text-decoration-none">
                       <div className="d-flex justify-content-between align-items-center mb-2">
-                        {/* Area Badge Status & Prioritas */}
                         <div className="d-flex flex-wrap gap-2">
-                          <span className={`badge ${getStatusBadge(report.status)} px-3 py-2 rounded-pill fw-bold text-white`} style={{ fontSize: '0.75rem' }}>
+                          <span className={`badge ${getStatusBadge(report.status)} px-3 py-2 rounded-pill fw-bold`} style={{ fontSize: '0.75rem' }}>
                             <i className="bi bi-circle-fill me-1" style={{ fontSize: '0.4rem' }}></i>
                             {report.status ? report.status.replace(/_/g, ' ').toUpperCase() : 'PENDING'}
                           </span>
